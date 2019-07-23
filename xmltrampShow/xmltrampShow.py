@@ -8,7 +8,6 @@ from xml.sax.handler import feature_namespaces
 import os, sys, time
 import pdb
 
-PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
 
 if PY3:
@@ -39,7 +38,6 @@ def islst(f):
 empty = {'http://www.w3.org/1999/xhtml':
          ['img', 'br', 'hr', 'meta', 'link', 'base', 'param', 'input', 'col', 'area']}
 
-nprint = lambda x: print(x, end='')
 
 def quote(x, elt=True):
     if elt and '<' in x and len(x) > 24 and x.find(']]>') == -1:
@@ -302,8 +300,12 @@ class Namespace(object):
     def __getitem__(self, n):
         return (self.__uri, n)
 
+
+nprint = lambda x: print(x, end='')
+
 class StackShow:
-    def __init__(self):
+    def __init__(self, sleep):
+        self.sleep = sleep
         self.columns, self.lines = os.get_terminal_size()
         self.vinte, self.vrem = divmod(self.columns, 12)
         self.vi, _ = divmod(self.columns, 2)
@@ -329,8 +331,7 @@ class StackShow:
                 return '{}{}'.format(nss[inte*row_length : ], ' ' * (row_length-rem))
             else:
                 return ' ' * row_length
-        line1, line2, line3, line4, line5, line6 = ['{}'.format(gg(nmsg, vl, nvi, nvr)) for vl in range(1, 7)]
-        return line1, line2, line3, line4, line5, line6
+        return ['{}'.format(gg(nmsg, vl, nvi, nvr)) for vl in range(1, 7)]
 
     def getBlock(self, ss):
         def getStr(nss, num, inte, rem):
@@ -343,8 +344,7 @@ class StackShow:
         nss = ss[:40]
         inte, rem = divmod(len(nss), 10)
         line1, line6 = '{}{}{}'.format('|', '-' * 10, '|'), '{}{}{}'.format('|', '-' * 10, '|')
-        line2, line3, line4, line5 = ['{}{}{}'.format('|', getStr(nss, vl, inte, rem), '|') for vl in range(1, 5)]
-        return line1, line2, line3, line4, line5, line6
+        return [line1] + ['{}{}{}'.format('|', getStr(nss, vl, inte, rem), '|') for vl in range(1, 5)] + [line6]
 
     def sprint(self, stack, operation, value):
         length = len(stack)
@@ -366,62 +366,48 @@ class StackShow:
         elif length <= self.vinte:
             msgbox = self.getFirstLineMsg(operation, value)
             nline1, nline2, nline3, nline4, nline5, nline6 = self.getMsgBox(msgbox)
-
             nprint('-' * self.columns)
             nprint('| Message: '); nprint(operation); nprint(' ' * (self.columns-12-len(operation)));nprint('|')
             nprint('-' * self.columns)
-            def pr3(line):
-                nprint('|'); nprint(line); nprint('|'); nprint(' ' * (self.columns-1-self.vi)); nprint('|')
+            def pr3(line, stack, operation, popv):
+                nprint('|'); nprint(line); nprint('|');
+                if operation == 'Stack POP':
+                    nprint(popv)
+                    nprint(' ' * (self.columns-1-self.vi-len(popv)))
+                    nprint('|')
+                else:
+                    nprint(' ' * (self.columns-1-self.vi)); nprint('|')
+            pline1, pline2, pline3, pline4, pline5, pline6 = self.getBlock(repr(value))
             for v in range(1,7):
-                pr3(eval('nline{}'.format(v)))
+                pr3(eval('nline{}'.format(v)), stack, operation, eval('pline{}'.format(v)))
             nprint('-' * self.columns)
             nprint('*' * self.columns)
             nprint('* Stack:  bottom >------> top'); nprint(' ' * (self.columns-30)); nprint('*')
             nprint('*' * self.columns)
 
-            L1, L2, L3, L4, L5, L6 = '>', '>', '>', '>', '>', '>'
-            
+            tempDi = {'L{}'.format(v):'>' for v in range(1,7)}
             for i in range(length):
                 line1, line2, line3, line4, line5, line6 = self.getBlock(repr(stack[i]))
-                #for j in range(1,7):
-                #    exec('L{} += line{}'.format(j, j))
-                L1 += line1
-                #exec('L1=L1+line1')
-                L2 += line2
-                L3 += line3
-                L4 += line4
-                L5 += line5
-                L6 += line6
-            pdb.set_trace()
+                for j in range(1,7):
+                    tempDi['L{}'.format(j)] += eval('line{}'.format(j))
             tail = ' ' * (self.columns-2-length*12) + '>'
-            expr = "L8='''{}'''".format(eval("L1+tail"))
-            exec(expr)
-            print(L8)
-            #L1 += tail
-            L2 += tail
-            L3 += tail
-            L4 += tail
-            L5 += tail
-            L6 += tail
+            for k in range(1, 7):
+                tempDi['L{}'.format(k)] += tail
             for ll in range(1,7):
-                nprint(eval('L{}'.format(ll)))
+                nprint(tempDi['L{}'.format(ll)])
             nprint('*' * self.columns)
-
         else:
             print('Beyond screen width, cannot show it to you, please use a lower layer xml.')
 
         [print() for i in range(self.lines-22)]
-        time.sleep(2)
-
-    def printStack(self, stack=None):
-        pass
+        time.sleep(self.sleep)
 
 class Seeder(EntityResolver, DTDHandler, ContentHandler, ErrorHandler):
     def __init__(self):
         self.stack = []
         self.ch = ''
         self.prefixes = {}
-        self.show = StackShow()
+        self.show = StackShow(3)
         ContentHandler.__init__(self)
 
     def startPrefixMapping(self, prefix, uri):
@@ -471,6 +457,7 @@ class Seeder(EntityResolver, DTDHandler, ContentHandler, ErrorHandler):
 
 
 def seed(fileobj):
+    input('Please maximize your terminal window for this show.')
     seeder = Seeder()
     parser = make_parser()
     parser.setFeature(feature_namespaces, 1)
