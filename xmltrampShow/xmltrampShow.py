@@ -357,7 +357,7 @@ class StackShow:
             [pr1() for _ in range(6)]
             nprint('-' * self.columns)
             nprint('*' * self.columns)
-            nprint('* Stack:  bottom >------> top');nprint(' ' * (self.columns-30));nprint('*')
+            nprint('* Stack:  bottom >------> top'); nprint(' ' * (self.columns-30)); nprint('*')
             nprint('*' * self.columns)
             def pr2():
                 nprint('>'); nprint(' ' * (self.columns-2)); nprint('>')
@@ -367,7 +367,7 @@ class StackShow:
             msgbox = self.getFirstLineMsg(operation, value)
             nline1, nline2, nline3, nline4, nline5, nline6 = self.getMsgBox(msgbox)
             nprint('-' * self.columns)
-            nprint('| Message: '); nprint(operation); nprint(' ' * (self.columns-12-len(operation)));nprint('|')
+            nprint('| Message: '); nprint(operation); nprint(' ' * (self.columns-12-len(operation))); nprint('|')
             nprint('-' * self.columns)
             def pr3(line, stack, operation, popv):
                 nprint('|'); nprint(line); nprint('|');
